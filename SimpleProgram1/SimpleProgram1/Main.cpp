@@ -24,12 +24,30 @@ double max_angle(KU_TimeDATA t, double p[6], double p_noisy[6], int tip)
 	return(fmax(lon_err, alt_err));
 }
 
+void make_consistent(double p[6])
+{
+	double PI = 3.141592653589793;
+	p[1] = abs(p[1]);
+	p[3] = abs(p[3]);
+	for (int i = 2; i < 6; i++)
+	{
+		if (i == 3) continue;
+		if (p[i] < 0)
+			p[i] += 2 * PI;
+		else if (p[i] > 2 * PI)
+			p[i] -= 2 * PI;
+	}
 
-void add_randn(double in[6], double out[6], double dP[6])
+
+
+}
+
+
+void add_randn(double p[6], double dP[6])
 {
 	int i,j;
 	double e[6];
-	int N_SAMPLES = 5;
+	int N_SAMPLES = 50;//ЦПТ в треде
 	//Генерация ошибки ~ randn, используя центральную предельнуую теорему
 	for (i = 0; i < 6; i++)
 	{
@@ -39,7 +57,8 @@ void add_randn(double in[6], double out[6], double dP[6])
 			e[i] += 2.0*(rand()- RAND_MAX/2)/ RAND_MAX ;			//rand-0.5 ~ U[-1,1], mu=0, sigma = sqrt(4/12)
 		}
 		e[i] = (e[i] * sqrt(3. / N_SAMPLES)) * dP[i]; //получим randn ~ N[0, dR[i]]
-		out[i] = in[i] + e[i];
+		printf("error %lf\n", e[i]);
+		p[i] += e[i];
 	}
 }
 
@@ -89,18 +108,18 @@ int main(int argc, _TCHAR* argv[])
 	double dR[6];
 	double dP[6];
 
-	double PI = 3.14159265;
+	double PI = 3.141592653589793;
 
 	// Ссаная загрузка констант, без которой из-за FM=0 цикл в INTUM уходит в бесконечность, СПАСИБО ЧТО ПОСТАВИЛИ АССЕРТ
 
 	coil();
 
 
-	pn[0] = 42000.; //p
-	pn[1] = 0.; //
-	pn[2] = 0.1; //
-	pn[3] = PI/4.; //p
-	pn[4] = PI/6.; //omega
+	pn[0] = 42000.; //p - большая полуось  42 000 км
+	pn[1] = 0.; //k = 0 (эксентриситет, а геостационрная орибат - это круговая орбита)  
+	pn[2] = PI/4.; // q = pi/4 - это угол между направлениями из притягивающего центра на восходящий узел орбиты и на перицентр, мне кажется пох какой брать его
+	pn[3] = 0.01; // i - наклонение не должно быть 0
+	pn[4] = PI/6.; // omega - инерциальная долгота восходящего узла 
 	pn[5] = PI/3.; //u
 
 	// Проверка на геостационарность
@@ -135,18 +154,34 @@ int main(int argc, _TCHAR* argv[])
 	RIPM(dR, dP);
 	int i, t;
 	double angle;
-	add_randn(pn, pn_noisy, dR);
+	int noisy_iter = 0;
+	//Инициируем оба вектора
+	for (int jj = 0; jj < 6; jj++)
+		pn_noisy[jj] = pn[jj];
+
+	// Добавим шумчику
+	add_randn(pn_noisy, dR);
 	ts.d = 0;
 	ts.s = 0.;
 	tt.d = 0;
 
 	// Порог ошибки для угла между векторами (шумным и нешумным)
-	double THRESHOLD = 0.1;
+	double THRESHOLD = 0.1/180.*PI;
 	printf("gogogo");
-	for (ts.s = 0; ts.s < 100000; ts.s += 4)
+	double add_noise_interval = 28800.;
+	double prop_s = 100.;
+	for (int it = 0; it < 100000; it ++)
 	{
-		//интегрируем на 10000 секунды вперед ([хорошо бы переводить в дни, но щас лень])
-		tt.s = ts.s + 10000.;
+		//интегрируем на prop_s секунды вперед
+		tt.d = ts.d;
+		tt.s = ts.s + prop_s;
+
+		//каждые 8 часов добавляем шум
+		if (it*(prop_s / add_noise_interval) > noisy_iter)
+		{
+			noisy_iter++;
+			add_randn(pn_noisy, dR);
+		}
 		printf("Times: %d %lf %d %lf \n", ts.d, ts.s, tt.d, tt.s);
 		error = INTUM(&ts, &tt, pn, pk, tip);
 		if (error != 0) printf("First INTUM error: %d\n", error);
@@ -166,13 +201,19 @@ int main(int argc, _TCHAR* argv[])
 			break;
 
 		}
-		else printf("Angle is smol and nice: %lf", angle);
+		else printf("Angle is smol and nice: %lf\n", angle);
+
+		//копируем посчитанные pk в начальные
 		for (int jj = 0; jj < 6; jj++)
 		{
 			pn[jj] = pk[jj];
 			pn_noisy[jj] = pk_noisy[jj];
 		}
 
+		//переводим в дни
+		ts.s += prop_s;
+		ts.d += ts.s / 86400;
+		ts.s = ts.s - 86400. *int(ts.s / 86400);
 
 		
 	}

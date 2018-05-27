@@ -1,0 +1,5 @@
+﻿  Main.cpp
+c:\users\evgps\documents\github\space_navi\simpleprogram1\simpleprogram1\main.cpp(83): warning C4101: 'p': unreferenced local variable
+c:\users\evgps\documents\github\space_navi\simpleprogram1\simpleprogram1\main.cpp(136): warning C4101: 'i': unreferenced local variable
+c:\users\evgps\documents\github\space_navi\simpleprogram1\simpleprogram1\main.cpp(136): warning C4101: 't': unreferenced local variable
+  SimpleProgram1.vcxproj -> C:\Users\evgps\Documents\GitHub\space_navi\SimpleProgram1\x64\Debug\SimpleProgram1.exe

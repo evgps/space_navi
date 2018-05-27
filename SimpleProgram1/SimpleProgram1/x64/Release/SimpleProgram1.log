@@ -1,0 +1,8 @@
+﻿  XKY_HBO_4_2.cpp
+XKY_HBO_4_2.cpp(203): warning C4477: 'printf' : format string '%lf' requires an argument of type 'double', but variadic argument 3 has type 'int'
+  Generating code
+  3 of 33 functions ( 9.1%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  SimpleProgram1.vcxproj -> C:\Users\evgps\Documents\GitHub\space_navi\SimpleProgram1\x64\Release\SimpleProgram1.exe

@@ -7,23 +7,23 @@
 
 
 
-/*Вычисление скалярного призведения между первыми тремя компонентами векторов*/
-
-double scalar_prod(double * vec_1, double * vec_2)
+double max_angle(KU_TimeDATA t, double p[6], double p_noisy[6], int tip)
 {
-	return (vec_1[0] * vec_2[0] + vec_1[1] * vec_2[1] + vec_1[2] * vec_2[2]);
+	double DEL_UT1 = 0.; //- поправка в значение UTC
+	double lon, alt;
+	double lon_noisy, alt_noisy;
+	double lon_err, alt_err;
+	// пересчет в широту и долготу
+	GEOCM(t, p, tip, DEL_UT1, &lon, &alt);
+	GEOCM(t, p_noisy, tip, DEL_UT1, &lon_noisy, &alt_noisy);
+
+	lon_err = abs((sin(lon - lon_noisy)));
+	alt_err = abs(sin(alt - alt_noisy));
+	printf("lon err: %lf\n", lon_err);
+	printf("alt err: %lf\n", alt_err);
+	return(fmax(lon_err, alt_err));
 }
 
-/*Вычисление угла между первыми тремя компонентами векторов*/
-
-double calc_angle(double * vec_1, double * vec_2)
-{
-	double prod, vec_norms;
-	prod = scalar_prod(vec_1, vec_2);
-	vec_norms = sqrt(scalar_prod(vec_1, vec_1)) * sqrt(scalar_prod(vec_2, vec_2));
-	return (acos(prod / vec_norms));
-}
- 
 
 void add_randn(double in[6], double out[6], double dP[6])
 {
@@ -38,7 +38,7 @@ void add_randn(double in[6], double out[6], double dP[6])
 		{
 			e[i] += 2.0*(rand()- RAND_MAX/2)/ RAND_MAX ;			//rand-0.5 ~ U[-1,1], mu=0, sigma = sqrt(4/12)
 		}
-		e[i] = (e[i] * sqrt(3 / N_SAMPLES)) * dP[i]; //получим randn ~ N[0, dR[i]]
+		e[i] = (e[i] * sqrt(3. / N_SAMPLES)) * dP[i]; //получим randn ~ N[0, dR[i]]
 		out[i] = in[i] + e[i];
 	}
 }
@@ -89,12 +89,21 @@ int main(int argc, _TCHAR* argv[])
 	double dR[6];
 	double dP[6];
 
-	pn[0] = 0;
-	pn[1] = 0;
-	pn[2] = 0;
-	pn[3] = 0;
-	pn[4] = 0;
-	pn[5] = 0;
+	double PI = 3.14159265;
+
+	// Ссаная загрузка констант, без которой из-за FM=0 цикл в INTUM уходит в бесконечность, СПАСИБО ЧТО ПОСТАВИЛИ АССЕРТ
+
+	coil();
+
+
+	pn[0] = 42000.; //p
+	pn[1] = 0.; //
+	pn[2] = 0.1; //
+	pn[3] = PI/4.; //p
+	pn[4] = PI/6.; //omega
+	pn[5] = PI/3.; //u
+
+	// Проверка на геостационарность
 
 	//Следует выбрать величину погрешности (сигму в N(0,сигма)
 	// 1 matrix
@@ -122,30 +131,34 @@ int main(int argc, _TCHAR* argv[])
 	//dR[5] = sqrt(2.329e-007);
 
 
-	//Конвертируем R в P НЕ КОНВЕРТИРУЕМ, А СРАЗУ ЗАДАЕМ ЛОЛ
-	//RIPM(dR, dP);
+	//Конвертируем R в P
+	RIPM(dR, dP);
 	int i, t;
 	double angle;
 	add_randn(pn, pn_noisy, dR);
-	ts.d = 1;
-	ts.s = 0;
-	tt.d = 1;
+	ts.d = 0;
+	ts.s = 0.;
+	tt.d = 0;
 
 	// Порог ошибки для угла между векторами (шумным и нешумным)
-	double THRESHOLD = 0.01;
+	double THRESHOLD = 0.1;
 	printf("gogogo");
 	for (ts.s = 0; ts.s < 100000; ts.s += 4)
 	{
-		//интегрируем на 4 секунды вперед
-		tt.s = ts.s + 4;
-
+		//интегрируем на 10000 секунды вперед ([хорошо бы переводить в дни, но щас лень])
+		tt.s = ts.s + 10000.;
+		printf("Times: %d %lf %d %lf \n", ts.d, ts.s, tt.d, tt.s);
 		error = INTUM(&ts, &tt, pn, pk, tip);
-		if (error != 0)	printf("First INTUM error: %d", error);
+		if (error != 0) printf("First INTUM error: %d\n", error);
 		
 		error = INTUM(&ts, &tt, pn_noisy, pk_noisy, tip);
-		if (error != 0)	printf("Second INTUM error: %d", error);
+		if (error != 0)	printf("Second INTUM error: %d\n", error);
 
-		angle = calc_angle(pk, pk_noisy);
+		//angle = calc_angle(pk, pk_noisy);
+
+		angle = max_angle(tt, pk, pk_noisy, tip);
+		
+		//fprintf();
 		if (abs(angle) > THRESHOLD)
 		{
 			printf("Angle is too hude: %lf \nEXIT!", angle);
@@ -154,9 +167,14 @@ int main(int argc, _TCHAR* argv[])
 
 		}
 		else printf("Angle is smol and nice: %lf", angle);
-		coil();
+		for (int jj = 0; jj < 6; jj++)
+		{
+			pn[jj] = pk[jj];
+			pn_noisy[jj] = pk_noisy[jj];
+		}
 
-		return 0;
+
+		
 	}
 	while (1);
 

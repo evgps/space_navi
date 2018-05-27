@@ -99,6 +99,7 @@ int INT2000(KU_TimeDATA *t_n,TimeDATA_u *t_k, double p[],
  KU_TimeDATA *ts;
  KU_TimeDATA t_s;
 
+ //Проверьте, что вы вызвали coil() для загрузки констант
   RE    = TKOC[ 9];
   DVAPI = TKOC[11];
   FM    = TKOC[ 3];
@@ -131,7 +132,7 @@ int INT2000(KU_TimeDATA *t_n,TimeDATA_u *t_k, double p[],
     nsig = 0;
   if(dot==1) a  = (tk.d-ts->d)*86400.0+tk.s-ts->s;
   else       a  =  tk.d*DVAPI+tk.s-p[5];
-  if (a>0.0) nsig =  1;
+  if (a>=0.0) nsig =  1;
   if (a<0.0) nsig = -1;
 
 
@@ -188,26 +189,28 @@ int INT2000(KU_TimeDATA *t_n,TimeDATA_u *t_k, double p[],
   for (i=0;i<10;i++) pp[i]=0.0;
 
   /* Организация интегрирования по шагам методом Рунге-Кутты  */
+  int iter = 0;
+  while(1)    {
+    if(dot==0) 
+	{
+		a=tk.d*DVAPI+tk.s-uscu[0];
+	    if (fabs(a)<=fabs(pred[8]))  
+		{ pred[8]=a;  break; }
+	} 
+    else 
+	{ 
+		a=(tk.d - ts->d)*86400.0 + tk.s;
+		if((ts->s - a)*nsig >= 0.0)
+		{ SECUSM(ts, a, &tk.d,  pp, uscu, tip, priz, pred);
+		            break;  }
+	} 
+    ut= ut+pred[8];
+	RKSHM (ts, &tk.d, pp, uscu, sbr, dot, tip, priz, pred);
+	iter++;
 
-      while(1)    {
-        if(dot==0) 
-		{
-		  a=tk.d*DVAPI+tk.s-uscu[0];
-	      if (fabs(a)<=fabs(pred[8]))  
-		  { pred[8]=a;  break; }
-		} 
-        else 
-		{ 
-		  a=(tk.d - ts->d)*86400.0 + tk.s;
-		  if((ts->s - a)*nsig >= 0.0)
-		  { SECUSM(ts, a, &tk.d,  pp, uscu, tip, priz, pred);
-		                break;  }
-		} 
-        ut= ut+pred[8];
-		RKSHM (ts, &tk.d, pp, uscu, sbr, dot, tip, priz, pred);
-	 } 
-     ut= ut+pred[8];
-     RKSHM (ts, &tk.d,  pp, uscu, sbr, dot, tip, priz, pred);
+  } 
+    ut= ut+pred[8];
+    RKSHM (ts, &tk.d,  pp, uscu, sbr, dot, tip, priz, pred);
 
 
   for (i=0;i<5;i++) p[i] += pp[i];
@@ -1513,7 +1516,7 @@ void PROV(KU_TimeDATA todn,double podn[6],int tip,KU_TimeDATA t,double p[6],
 				:         процесса прогнозирования
 				: nvit  - количество прогнозируемых витков КА 
 	            :  tip  - переменная, определяющия систему координат
-				: priz  - переменная, задающая признаки учета возмущений
+				: priz  - переменная, задающая признаки учета возмущений //тут -nan
   Вход/Выход    : нет
 	Выход		:pp[]  -  вектор орбитальных параметров КА в конечной 
 	            :         точке интервала прогноза

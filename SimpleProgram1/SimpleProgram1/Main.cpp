@@ -90,7 +90,7 @@ int main(int argc, _TCHAR* argv[])
 	double dR[6]; //векторы ошибок
 	double dP[6];
 	double PI = 3.141592653589793;
-
+	srand(302);
 	// Ссаная загрузка констант, без которой из-за FM=0 цикл в INTUM уходит в бесконечность, СПАСИБО ЧТО ПОСТАВИЛИ АССЕРТ
 	coil();
 
@@ -151,10 +151,6 @@ int main(int argc, _TCHAR* argv[])
 		pn_noisy[jj] = pn[jj];
 
 	// Добавим шумчику
-	for (int k = 0; k < 200; k++)
-	{
-		add_randn(pn_noisy, dR);
-	}
 	add_randn(pn_noisy, dR);
 	ts.d = 0;
 	ts.s = 0.;

@@ -4,25 +4,25 @@
 
 // Очень грешно открываю файл глобально:
 FILE * log_file;
-
+FILE * rand_file;
 // Поиск ошибок в пересчете на долготу и широту. Было лень нормально обрабатывать вычисления от 0 до 2pi поэтому asin(sin)
 double max_angle(KU_TimeDATA t, double p[6], double p_noisy[6], int tip)
 {
 	double DEL_UT1 = 0.; //- поправка в значение UTC
-	double lon, alt;
-	double lon_noisy, alt_noisy;
-	double lon_err, alt_err;
+	double lat, lon;
+	double lat_noisy, lon_noisy;
+	double lat_err, lon_err;
 	// пересчет в широту и долготу
-	GEOCM(t, p, tip, DEL_UT1, &lon, &alt);
-	GEOCM(t, p_noisy, tip, DEL_UT1, &lon_noisy, &alt_noisy);
+	GEOCM(t, p, tip, DEL_UT1, &lat, &lon);
+	GEOCM(t, p_noisy, tip, DEL_UT1, &lat_noisy, &lon_noisy);
 
+	lat_err = abs(asin(sin(lat - lat_noisy)));
 	lon_err = abs(asin(sin(lon - lon_noisy)));
-	alt_err = abs(asin(sin(alt - alt_noisy)));
+	printf("lat err: %lf\n", lat_err);
 	printf("lon err: %lf\n", lon_err);
-	printf("alt err: %lf\n", alt_err);
-	fprintf(log_file, "%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t.d, t.s, lon, alt, lon_noisy, alt_noisy, lon_err, alt_err, fmax(lon_err, alt_err));
+	fprintf(log_file, "%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t.d, t.s, lat, lon, lat_noisy, lon_noisy, lat_err, lon_err, fmax(lat_err, lon_err));
 
-	return(fmax(lon_err, alt_err));
+	return(fmax(lat_err, lon_err));
 }
 
 // Проверка на говно
@@ -46,7 +46,12 @@ void add_randn(double p[6], double dP[6])
 {
 	int i,j;
 	double e[6];
-	int N_SAMPLES = 50;//ЦПТ в треде
+	int N_SAMPLES = 500;//ЦПТ в треде
+
+	int err;
+	err=fopen_s(&rand_file, "rand_file_0.csv", "a");
+
+	printf("%d\n", err);
 	//Генерация ошибки ~ randn, используя центральную предельнуую теорему
 	for (i = 0; i < 6; i++)
 	{
@@ -59,6 +64,8 @@ void add_randn(double p[6], double dP[6])
 		printf("error %lf\n", e[i]);
 		p[i] += e[i];
 	}
+	fprintf(rand_file, "%lf,%lf,%lf,%lf,%lf,%lf\n", e[0], e[1], e[2], e[3], e[4], e[5]);
+	int numclosed = _fcloseall();
 }
 
 // Страсть, 
@@ -134,7 +141,7 @@ int main(int argc, _TCHAR* argv[])
 	RIPM(dR, dP);
 
 	fprintf(log_file, "p,k,q,i,omega,u\n%lf,%lf,%lf,%lf,%lf,%lf\n", pn[0], pn[1], pn[2], pn[3], pn[4], pn[5]);
-	fprintf(log_file, "sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u\n%lf,%lf,%lf,%lf,%lf,%lf\nt.d,t.s,lon,alt,lon_noisy,alt_noisy,lon_err,alt_err,fmax(lon_err, alt_err))\n", dP[0], dP[1], dP[2], dP[3], dP[4], dP[5]);
+	fprintf(log_file, "sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u\n%lf,%lf,%lf,%lf,%lf,%lf\nt.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))\n", dP[0], dP[1], dP[2], dP[3], dP[4], dP[5]);
 
 	int i, t;
 	double angle;
@@ -144,6 +151,10 @@ int main(int argc, _TCHAR* argv[])
 		pn_noisy[jj] = pn[jj];
 
 	// Добавим шумчику
+	for (int k = 0; k < 200; k++)
+	{
+		add_randn(pn_noisy, dR);
+	}
 	add_randn(pn_noisy, dR);
 	ts.d = 0;
 	ts.s = 0.;

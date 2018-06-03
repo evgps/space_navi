@@ -496,3 +496,28 @@ t.d,t.s,lon,alt,lon_noisy,alt_noisy,lon_err,alt_err,fmax(lon_err, alt_err))
 0,49100.000000,1.847255,-1.517295,1.848876,-1.518368,0.001621,0.001073,0.001621
 0,49200.000000,1.841474,-1.518147,1.843156,-1.519221,0.001682,0.001074,0.001682
 0,49300.000000,1.835739,-1.518996,1.837484,-1.520071,0.001746,0.001075,0.001746
+p,k,q,i,omega,u
+42000.000000,0.000000,0.785398,0.010000,0.523599,1.047198
+sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u
+0.000000,-0.000377,-1.000000,0.000266,0.000269,0.000377
+t.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))
+p,k,q,i,omega,u
+42000.000000,0.000000,0.785398,0.010000,0.523599,1.047198
+sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u
+0.000000,-0.000377,-1.000000,0.000266,0.000269,0.000377
+t.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))
+p,k,q,i,omega,u
+42000.000000,0.000000,0.785398,0.010000,0.523599,1.047198
+sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u
+0.000000,-0.000377,-1.000000,0.000266,0.000269,0.000377
+t.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))
+p,k,q,i,omega,u
+42000.000000,0.000000,0.785398,0.010000,0.523599,1.047198
+sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u
+0.000000,-0.000377,-1.000000,0.000266,0.000269,0.000377
+t.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))
+p,k,q,i,omega,u
+42000.000000,0.000000,0.785398,0.010000,0.523599,1.047198
+sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u
+0.000000,-0.000377,-1.000000,0.000266,0.000269,0.000377
+t.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))

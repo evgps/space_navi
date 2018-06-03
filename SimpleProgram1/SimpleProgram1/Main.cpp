@@ -48,10 +48,10 @@ void add_randn(double p[6], double dP[6])
 	double e[6];
 	int N_SAMPLES = 500;//ЦПТ в треде
 
-	int err;
-	err=fopen_s(&rand_file, "rand_file_0.csv", "a");
+	//int err;
+	//err=fopen_s(&rand_file, "rand_file_0.csv", "a");
 
-	printf("%d\n", err);
+	//printf("%d\n", err);
 	//Генерация ошибки ~ randn, используя центральную предельнуую теорему
 	for (i = 0; i < 6; i++)
 	{
@@ -64,8 +64,8 @@ void add_randn(double p[6], double dP[6])
 		printf("error %lf\n", e[i]);
 		p[i] += e[i];
 	}
-	fprintf(rand_file, "%lf,%lf,%lf,%lf,%lf,%lf\n", e[0], e[1], e[2], e[3], e[4], e[5]);
-	int numclosed = _fcloseall();
+	//fprintf(rand_file, "%lf,%lf,%lf,%lf,%lf,%lf\n", e[0], e[1], e[2], e[3], e[4], e[5]);
+	//int numclosed = _fcloseall();
 }
 
 // Страсть, 

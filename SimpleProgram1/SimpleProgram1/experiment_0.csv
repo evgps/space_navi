@@ -521,3 +521,9 @@ p,k,q,i,omega,u
 sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u
 0.000000,-0.000377,-1.000000,0.000266,0.000269,0.000377
 t.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))
+p,k,q,i,omega,u
+42000.000000,0.000000,0.785398,0.010000,0.523599,1.047198
+sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u
+0.000000,-0.000377,-1.000000,0.000266,0.000269,0.000377
+t.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))
+0,100.000000,-0.955780,-0.014134,-0.955201,-0.017155,0.000579,0.003021,0.003021

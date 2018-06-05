@@ -5,6 +5,8 @@
 // Очень грешно открываю файл глобально:
 FILE * log_file;
 FILE * rand_file;
+
+
 // Поиск ошибок в пересчете на долготу и широту. Было лень нормально обрабатывать вычисления от 0 до 2pi поэтому asin(sin)
 double max_angle(KU_TimeDATA t, double p[6], double p_noisy[6], int tip)
 {
@@ -21,6 +23,7 @@ double max_angle(KU_TimeDATA t, double p[6], double p_noisy[6], int tip)
 	printf("lat err: %lf\n", lat_err);
 	printf("lon err: %lf\n", lon_err);
 	fprintf(log_file, "%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t.d, t.s, lat, lon, lat_noisy, lon_noisy, lat_err, lon_err, fmax(lat_err, lon_err));
+	//fprintf(log_file, "%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t.d, t.s, p[0], p[1], p[2], p[3], p[4], p[5]);
 
 	return(fmax(lat_err, lon_err));
 }
@@ -87,10 +90,11 @@ int main(int argc, _TCHAR* argv[])
 	double pk[6];	// конечный вектор состояний
 	double pn_noisy[6];	// начальный вектор состояний
 	double pk_noisy[6];	// конечный вектор состояний
+	double pn_init[6];
 	double dR[6]; //векторы ошибок
 	double dP[6];
 	double PI = 3.141592653589793;
-	srand(302);
+	srand(304);
 	// Ссаная загрузка констант, без которой из-за FM=0 цикл в INTUM уходит в бесконечность, СПАСИБО ЧТО ПОСТАВИЛИ АССЕРТ
 	coil();
 
@@ -100,18 +104,44 @@ int main(int argc, _TCHAR* argv[])
 	err = fopen_s(&log_file, "experiment_0.csv", "a");
 
 	// Начальные условия:
-	pn[0] = 42000.; //p - большая полуось  42 000 км
-	pn[1] = 0.; //k = 0 (эксентриситет, а геостационрная орибат - это круговая орбита)  
-	pn[2] = PI/4.; // q = pi/4 - это угол между направлениями из притягивающего центра на восходящий узел орбиты и на перицентр, мне кажется пох какой брать его
-	pn[3] = 0.01; // i - наклонение не должно быть 0
-	pn[4] = PI/6.; // omega - инерциальная долгота восходящего узла 
-	pn[5] = PI/3.; //u
+	//pn[0] = 42000.; //p - большая полуось  42 000 км
+	//pn[1] = 0.; //k = 0 (эксентриситет, а геостационрная орибат - это круговая орбита)  
+	//pn[2] = PI/4.; // q = pi/4 - это угол между направлениями из притягивающего центра на восходящий узел орбиты и на перицентр, мне кажется пох какой брать его
+	//pn[3] = 0.01; // i - наклонение не должно быть 0
+	//pn[4] = PI/6.; // omega - инерциальная долгота восходящего узла 
+	//pn[5] = PI/3.; //u
 
-	double THRESHOLD = 0.1 / 180.*PI;	// Порог ошибки для угла между векторами (шумным и нешумным)
+
+
+	pn[0] = 42165.5079267958;
+	pn[1] = 0.0000144658;
+	pn[2] = 0.0000336783;
+	pn[3] = 1.5708271304;
+	pn[4] = 1.5743659646;
+	pn[5] = 0.7311609003;
+
+	pn[0] = 42165.04066972509463;
+	pn[1] = -0.00000022158530;
+	pn[2] = 0.00003041071769;
+	pn[3] = 1.57081023390739;
+	pn[4] = 1.57124925859947;
+	pn[5] = 0.47580873722654;
+
+	double THRESHOLD = 0.1 * PI / 180.;	// Порог ошибки для угла между векторами (шумным и нешумным)
 	double add_noise_interval = 28800.;	// Интервал добавления шума (8ч)
-	double prop_s = 100.;	// Шаг интегрирования ( интегрируем вперед на prop_s сек и сравниваем ошибки)
+	double prop_s = 360;	// Шаг интегрирования ( интегрируем вперед на prop_s сек и сравниваем ошибки)
 
 	//Следует выбрать величину погрешности (сигму в N(0,сигма))
+
+
+	//// 2 matrix
+	dR[0] = sqrt(1.298e+001);
+	dR[1] = sqrt(3.309e-008);
+	dR[2] = sqrt(1.969e-009);
+	dR[3] = sqrt(1.060e-007);
+	dR[4] = sqrt(1.068e-007);
+	dR[5] = sqrt(1.210e-007);
+
 	// 1 matrix
 	dR[0] = sqrt(1.675e+001);
 	dR[1] = sqrt(3.620e-008);
@@ -119,7 +149,6 @@ int main(int argc, _TCHAR* argv[])
 	dR[3] = sqrt(7.088e-008);
 	dR[4] = sqrt(7.246e-008);
 	dR[5] = sqrt(1.418e-007);
-
 	//// 2 matrix
 	//dR[0] = sqrt(1.298e+001);
 	//dR[1] = sqrt(3.309e-008);
@@ -140,8 +169,8 @@ int main(int argc, _TCHAR* argv[])
 	//Конвертируем R в P
 	RIPM(dR, dP);
 
-	fprintf(log_file, "p,k,q,i,omega,u\n%lf,%lf,%lf,%lf,%lf,%lf\n", pn[0], pn[1], pn[2], pn[3], pn[4], pn[5]);
-	fprintf(log_file, "sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u\n%lf,%lf,%lf,%lf,%lf,%lf\nt.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))\n", dP[0], dP[1], dP[2], dP[3], dP[4], dP[5]);
+	//fprintf(log_file, "p,k,q,i,omega,u\n%lf,%lf,%lf,%lf,%lf,%lf\n", pn[0], pn[1], pn[2], pn[3], pn[4], pn[5]);
+	//fprintf(log_file, "sigma_p,sigma_k,sigma_q,sigma_i,sigma_omega,u\n%lf,%lf,%lf,%lf,%lf,%lf\nt.d,t.s,lat,lon,lat_noisy,lon_noisy,lat_err,lon_err,fmax(lat_err, lon_err))\n", dP[0], dP[1], dP[2], dP[3], dP[4], dP[5]);
 
 	int i, t;
 	double angle;
@@ -150,11 +179,13 @@ int main(int argc, _TCHAR* argv[])
 	for (int jj = 0; jj < 6; jj++)
 		pn_noisy[jj] = pn[jj];
 
+	for (int jj = 0; jj < 6; jj++)
+		pn_init[jj] = pn[jj];
 	// Добавим шумчику
 	add_randn(pn_noisy, dR);
-	ts.d = 0;
-	ts.s = 0.;
-	tt.d = 0;
+	ts.d = 11710;
+	ts.s = 46800.;
+	tt.d = 11710;
 
 	for (int it = 0; it < 100500; it ++)
 	{
@@ -177,10 +208,11 @@ int main(int argc, _TCHAR* argv[])
 		if (error != 0)	printf("Second INTUM error: %d\n", error);
 
 		// нахождение ошибки
-		angle = max_angle(tt, pk, pk_noisy, tip);
+		//angle = max_angle(ts, pk, pk_noisy, tip);
+		angle = max_angle(ts, pk, pn_init, tip);
 		
 		// Выход при большом значении ошибки
-		if (abs(angle) > THRESHOLD)
+		if (abs(angle) > 12)
 		{
 			printf("Angle is too hude: %lf \nEXIT!", angle);
 			break;

@@ -116,17 +116,19 @@ int main(int argc, _TCHAR* argv[])
 	const char * filename = "PLAN_COR.TXT";
 	// Название файла
 	int cor_max_num;
-	err = fopen_s(&log_file, "experiment_corr.csv", "a");
+	err = fopen_s(&log_file, "experiment_corr.csv", "w");
 	cor_max_num = read_corrections(filename);
 
 	// Начальные условия:
 	fopen_s(&p_file, "vector.txt", "r");
 	fscanf_s(p_file, "%lf\t%lf\t%lf\t%lf\t%lf\t%lf", &pn[0], &pn[1], &pn[2], &pn[3], &pn[4], &pn[5]);
+	fscanf_s(p_file, "%d\t%lf", &ts.d, &ts.s);
 	fclose(p_file);
-	
-	double THRESHOLD = 10 * PI / 180.;	// Порог ошибки для угла между векторами (шумным и нешумным)
+	tt.d = ts.d;
+	tt.s = ts.s;
+	double THRESHOLD = 0.10 * PI / 180.;	// Порог ошибки для угла между векторами (шумным и нешумным)
 	double add_noise_interval = 28800.;	// Интервал добавления шума (8ч)
-	double prop_s = 360;	// Шаг интегрирования ( интегрируем вперед на prop_s сек и сравниваем ошибки)
+	double prop_s = 100;	// Шаг интегрирования ( интегрируем вперед на prop_s сек и сравниваем ошибки)
 
 	double angle;
 	double lat_stat, lon_stat;
@@ -136,10 +138,7 @@ int main(int argc, _TCHAR* argv[])
 	for (int jj = 0; jj < 6; jj++)
 		pn_init[jj] = pn[jj];
 
-	ts.d = 11713;
-	tt.d = ts.d;
-	ts.s = 54880.;
-	tt.s = ts.s - prop_s;
+
 
 	GEOCM(tt, pn_init, tip, 0., &lat_stat, &lon_stat);
 	printf("Стартовая позиция: %lf, %lf", lat_stat, lon_stat);
@@ -160,6 +159,8 @@ int main(int argc, _TCHAR* argv[])
 		printf("Time: %d %lf\n", ts.d, ts.s);
 
 		tt.s = ts.s + secs_integrate;
+		tt.d += tt.s / 86400;
+		tt.s = tt.s - 86400. *int(tt.s / 86400);
 
 		if (secs_integrate == 0)
 		{
@@ -202,12 +203,17 @@ int main(int argc, _TCHAR* argv[])
 			tmp.s = tt.s;
 			tmp.u = 228; //ненужно
 			printf("INTUS ANUS %d\n", cor_num);
-			error = INTUS(&ts, &tmp, pk, 1, 1, tip, corrs[cor_num].stw);
+			error = INTUS(&ts, &tmp, pn, 1, 3, tip, corrs[cor_num].stw);
+			//копируем посчитанные pk в начальные
+			for (int jj = 0; jj < 6; jj++)
+			{
+				pk[jj] = pn[jj];
+			}
 			if (error != 0) printf("First INTUM error: %d\n", error);
 		}
 
 		// нахождение ошибки для нач точки
-		angle = max_angle_stat(ts, pk, lat_stat, lon_stat, tip);
+		angle = max_angle_stat(tt, pk, lat_stat, lon_stat, tip);
 		// Выход при большом значении ошибки
 		if (abs(angle) > THRESHOLD)
 		{

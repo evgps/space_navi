@@ -6,6 +6,24 @@
 FILE * log_file;
 FILE * rand_file;
 
+// Поиск ошибок в пересчете на долготу и широту отн заданной точки
+double max_angle_stat(KU_TimeDATA t, double p[6], double lat_stat, double lon_stat, int tip)
+{
+	double DEL_UT1 = 0.; //- поправка в значение UTC
+	double lat, lon;
+	double lat_err, lon_err;
+	// пересчет в широту и долготу
+	GEOCM(t, p, tip, DEL_UT1, &lat, &lon);
+
+	lat_err = abs(asin(sin(lat - lat_stat)));
+	lon_err = abs(asin(sin(lon - lon_stat)));
+	printf("lat err: %lf\n", lat_err);
+	printf("lon err: %lf\n", lon_err);
+	fprintf(log_file, "%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t.d, t.s, lat, lon, lat_stat, lon_stat, lat_err, lon_err, fmax(lat_err, lon_err));
+	//fprintf(log_file, "%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", t.d, t.s, p[0], p[1], p[2], p[3], p[4], p[5]);
+
+	return(fmax(lat_err, lon_err));
+}
 
 // Поиск ошибок в пересчете на долготу и широту. Было лень нормально обрабатывать вычисления от 0 до 2pi поэтому asin(sin)
 double max_angle(KU_TimeDATA t, double p[6], double p_noisy[6], int tip)
@@ -174,18 +192,26 @@ int main(int argc, _TCHAR* argv[])
 
 	int i, t;
 	double angle;
-	int noisy_iter = 0;
+	int noisy_iter = 1;
 	//Инициируем оба вектора
 	for (int jj = 0; jj < 6; jj++)
 		pn_noisy[jj] = pn[jj];
 
 	for (int jj = 0; jj < 6; jj++)
 		pn_init[jj] = pn[jj];
+
+	double lat_stat, lon_stat;
+
+
 	// Добавим шумчику
 	add_randn(pn_noisy, dR);
 	ts.d = 11710;
+	tt.d = ts.d;
 	ts.s = 46800.;
-	tt.d = 11710;
+	tt.s = ts.s - prop_s;
+
+	GEOCM(tt, pn_init, tip, 0., &lat_stat, &lon_stat);
+	printf("Стартовая позиция: %lf, %lf", lat_stat, lon_stat);
 
 	for (int it = 0; it < 100500; it ++)
 	{
@@ -209,10 +235,11 @@ int main(int argc, _TCHAR* argv[])
 
 		// нахождение ошибки
 		//angle = max_angle(ts, pk, pk_noisy, tip);
-		angle = max_angle(ts, pk, pn_init, tip);
-		
+		//angle = max_angle(ts, pk, pn_init, tip);
+		// Для нач точки
+		angle = max_angle_stat(ts, pk, lat_stat, lon_stat, tip);
 		// Выход при большом значении ошибки
-		if (abs(angle) > 12)
+		if (abs(angle) > THRESHOLD)
 		{
 			printf("Angle is too hude: %lf \nEXIT!", angle);
 			break;

@@ -113,7 +113,7 @@ int main(int argc, _TCHAR* argv[])
 
 ////////////////////    ПЕРЕМЕННЫЕ ЭКСПЕРИМЕНТА  ///////////////////////////
 	
-	const char * filename = "PLAN_COR.TXT";
+	const char * filename = "PLAN_CORR.TXT";
 	// Название файла
 	int cor_max_num;
 	err = fopen_s(&log_file, "experiment_corr.csv", "w");
@@ -128,7 +128,7 @@ int main(int argc, _TCHAR* argv[])
 	tt.s = ts.s;
 	double THRESHOLD = 0.10 * PI / 180.;	// Порог ошибки для угла между векторами (шумным и нешумным)
 	double add_noise_interval = 28800.;	// Интервал добавления шума (8ч)
-	double prop_s = 100;	// Шаг интегрирования ( интегрируем вперед на prop_s сек и сравниваем ошибки)
+	double prop_s = 1000;	// Шаг интегрирования ( интегрируем вперед на prop_s сек и сравниваем ошибки)
 
 	double angle;
 	double lat_stat, lon_stat;
